@@ -26,7 +26,7 @@
 		this.condition = '';
 		this.can_defend = true;
 		this.player_matrix = {"a":[null, null], "b":[null, null], "c":[null, null]};
-		this.player_names = {"a":"Pepe", "b":"Tito", "c":"Cholo"};
+		this.player_names = {"a":"Pepe", "b":"Tito", "c":"Cholo", "d":"Lalo"};
 	}
 	
 	//Ruleset and global game state for all players
@@ -93,8 +93,8 @@
 				for (var j=0; j<self.players.length; j++) {
 					if (self.players[j].uid != self.players[i].uid) {
 						self.players[j].state.player_matrix[self.players[i].uid] = [null, null];
-						self.players[j].state.player_names[self.players[i].uid] = self.players[i].name;
 					}
+					self.players[j].state.player_names[self.players[i].uid] = self.players[i].name;
 				}
 			}
 			if (self.shout) {
