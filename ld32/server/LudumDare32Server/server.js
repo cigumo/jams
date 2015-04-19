@@ -41,7 +41,7 @@
 		self.conditions = ["fart", "burp", "sneeze", "cough"];
 		self.current_turn_commands = {};
 		
-		self.min_players = 2; 	// how many players have to be connected to start the game
+		self.min_players = 4; 	// how many players have to be connected to start the game
 		self.shout = true;		// whether to spoil somebody 
 		
 		self.set_player = function(player) {
