@@ -34,13 +34,15 @@
 		
 		var self = this;
 		self.turn = 0;
-		self.min_players = 2;
 		self.players = [];
 		self.current_player_index = 0;
 		self.current_state = 'waiting';
 		self.animals = ["pig", "cow", "duck", "sheep"];
 		self.conditions = ["fart", "burp", "sneeze", "cough"];
 		self.current_turn_commands = {};
+		
+		self.min_players = 2; 	// how many players have to be connected to start the game
+		self.shout = true;		// whether to spoil somebody 
 		
 		self.set_player = function(player) {
 			var index = -1;
@@ -94,6 +96,9 @@
 						self.players[j].state.player_names[self.players[i].uid] = self.players[i].name;
 					}
 				}
+			}
+			if (self.shout) {
+				self.random_shout();
 			}
 			self.init_turn();
 		};
@@ -188,6 +193,21 @@
 		
 		self.random_int = function(min, max) {
 		    return Math.floor(Math.random() * (max - min + 1)) + min;
+		};
+		
+		self.random_shout = function () {
+			setTimeout(function() {
+				var rnd = self.random_int(1, self.round > 10 ? self.round : 10);
+				if (rnd > 5) {
+					var i = self.random_int(0, self.players.length);
+					self.players[i].send_audio(self.random_int(0,1) 
+							? self.players[i].state.animal 
+							: self.players[i].state.condition);
+				}
+				if (self.shout) {
+					self.random_shout();
+				}
+			}, self.random_int(60, 120)*1000);
 		};
 	}
 	
