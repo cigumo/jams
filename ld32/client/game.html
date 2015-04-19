@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>LD32</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+
+        <link rel="stylesheet" type="text/css" href="phone.css" /> 
+
+        <script type="text/javascript" src="MooTools-Core-1.5.1-compressed.js"></script>
+        <script type="text/javascript" src="MooTools-More-1.5.1-compressed.js"></script>
+        <script type="text/javascript" src="mlog.js"></script>
+        <script type="text/javascript" src="game.js"></script>
+        
+    </head>
+
+    <body>
+
+        <audio id="audio_bg"></audio>
+        <audio id="audio_noise"></audio>
+        
+        <!-- ------------------------------------------------------------ -->
+        <!-- page: splash -->      
+        <div id="splash">
+            <h1>GAME NAME!</h1>
+            <p>What's your name?</p>
+            <input id="username" name="username" type="text" value="" autocorrect="off" autocapitalize="off" autocomplete="off">
+            <div id="missing_username" class="error nodisplay">Please enter your name!</div><br/>
+            <a class="button" href="#" onclick="game.do_start()">START!</a>            
+        </div>
+
+        <!-- ------------------------------------------------------------ -->
+        <!-- page: main -->      
+        <div id="main" class="nodisplay">
+            <div id="matrix"></div>
+            <div id="attack"></div>
+            <div id="defense"></div>            
+        </div>
+               
+        <!-- ------------------------------------------------------------ -->
+        <!-- page: debug -->      
+        <div id="debug" class="nodisplay">
+            <h1>Debug</h1>
+
+            <a class="button" href="#" onclick="game.do_ping()">Ping</a>
+            <br/>
+            <br/>                 
+
+            <div id="log">
+            </div>
+        </div>
+
+        
+    </body>
+
+</html>
+

@@ -15,7 +15,12 @@ handshaken = False
 print "TCPServer Waiting for client on port 9999"
  
 import sys
- 
+
+def get_accept_websocket_key(self, key):
+    magic_string = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+    key += magic_string
+    return base64.b64encode(hashlib.sha1(key).hexdigest())
+
 data = ''
 header = ''
  

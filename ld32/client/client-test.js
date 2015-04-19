@@ -1,6 +1,7 @@
 //var wsUri = "ws://echo.websocket.org/";
 //var wsUri = "ws://localhost:9999/";
-var wsUri = "ws://192.168.1.44:8080/";
+var wsUri = "ws://localhost:8080/";
+//var wsUri = "ws://192.168.1.44:8080/";
 
 var output;
 function init() {
@@ -18,7 +19,7 @@ function testWebSocket() {
 
 function onOpen(evt) {
     writeToScreen("CONNECTED");
-    doSend("WebSocket rocks");
+    doSend('{ "cmd" : "ping" }');
 }
 
 function onClose(evt) {
