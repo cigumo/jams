@@ -104,7 +104,7 @@
 		};
 		
 		self.init_turn = function() {
-			self.current_state = 'turn';
+			self.current_state = 'playing';
 			self.turn++;
 			self.current_player_index++;
 			if (self.current_player_index >= self.players.length)
