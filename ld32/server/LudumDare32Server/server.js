@@ -1,7 +1,7 @@
 /**
  * New node file
  */
-var mod = (function() {
+(function() {
 	
 	/*
 	 * Requirements and extension methods.
@@ -16,6 +16,8 @@ var mod = (function() {
 	/*
 	 * Everything else =P
 	 */
+	
+	//Defines a game state for each player.
 	function GameState() {
 		this.state = '';
 		this.turn = 0;
@@ -23,10 +25,13 @@ var mod = (function() {
 		this.animal = '';
 		this.condition = '';
 		this.can_defend = true;
-		this.player_matrix = {};
-		this.player_names = {};
+		this.player_matrix = {"a":[null, null], "b":[null, null], "c":[null, null]};
+		this.player_names = {"a":"Pepe", "b":"Tito", "c":"Cholo"};
 	}
+	
+	//Ruleset and global game state for all players
 	function RuleSet() {
+		
 		var self = this;
 		self.turn = 0;
 		self.min_players = 2;
@@ -73,6 +78,7 @@ var mod = (function() {
 				self.start_game();
 			}
 		};
+		
 		self.start_game = function() {
 			self.players.shuffle();
 			self.current_player_index = -1;
@@ -80,6 +86,8 @@ var mod = (function() {
 			for (var i=0; i<self.players.length; i++) {
 				self.players[i].state.animal = self.animals[self.random_int(0, self.animals.length-1)];
 				self.players[i].state.condition = self.conditions[self.random_int(0, self.conditions.length-1)];
+				self.players[i].state.player_matrix = {};
+				self.players[i].state.player_names = {};
 				for (var j=0; j<self.players.length; j++) {
 					if (self.players[j].uid != self.players[i].uid) {
 						self.players[j].state.player_matrix[self.players[i].uid] = [null, null];
@@ -89,6 +97,7 @@ var mod = (function() {
 			}
 			self.init_turn();
 		};
+		
 		self.init_turn = function() {
 			self.current_state = 'turn';
 			self.turn++;
@@ -100,7 +109,8 @@ var mod = (function() {
 			for (var i=0; i<self.players.length; i++) {
 				self.players[i].send_game_state(self.current_state, self.turn, self.players[self.current_player_index].uid);
 			}
-		}
+		};
+		
 		self.attack = function(player, label) {
 			if (player.uid == self.players[self.current_player_index].uid) {
 				self.current_turn_commands.attack = { uid:player.uid, to:label };
@@ -111,6 +121,7 @@ var mod = (function() {
 				self.resolve_turn();
 			}
 		};
+		
 		self.defend = function(player, label) {
 			if ((label != null && label != undefined && player.state.can_defend)) {
 				player.state.can_defend = false;
@@ -120,13 +131,16 @@ var mod = (function() {
 				self.resolve_turn();
 			}
 		};
+		
 		self.guess = function(player) {
 			if (player.uid == self.players[self.current_player_index].uid) {
 				var victory = true;
 				for (var i = 0; i<self.players.length; i++) {
 					if (self.players[i].uid != player.uid) {
-						victory = self.players[i].animal == player.state.player_matrix[self.players[i].uid][0] 
-									&& self.players[i].condition == player.state.player_matrix[self.players[i].uid][1];
+						victory = self.players[i].animal == player.state.player_matrix[self.players[i].uid][0]
+									&& player.state.player_matrix[self.players[i].uid][0] != null
+									&& self.players[i].condition == player.state.player_matrix[self.players[i].uid][1]
+									&& player.state.player_matrix[self.players[i].uid][1] != null;
 						if (!victory)
 							break;
 					}
@@ -150,6 +164,7 @@ var mod = (function() {
 				}
 			}
 		};
+		
 		self.resolve_turn = function() {
 			if (self.current_turn_commands.attack != null && self.current_turn_commands.attack != undefined) {
 				for (var i = 0; i<self.players.length; i++) {
@@ -170,10 +185,13 @@ var mod = (function() {
 			}
 			self.init_turn();
 		}
+		
 		self.random_int = function(min, max) {
 		    return Math.floor(Math.random() * (max - min + 1)) + min;
 		};
 	}
+	
+	//Player capsule, wraps communication and player specific related data, event emitter
 	function Player(ws) {
 		events.EventEmitter.call(this);
 		var self = this;
@@ -191,6 +209,7 @@ var mod = (function() {
 		    	self.connected = false;
 		    });
 		};
+		
 		self.send_game_state = function(state_code, turn, next_uid) {
 			if (state_code != null && state_code != undefined)
 				self.state.state = state_code;
@@ -200,17 +219,27 @@ var mod = (function() {
 				self.state.token = next_uid;
 			self.send(new Command("set_game_state", self.state));
 		};
+		
 		self.send_audio = function(label) {
 			self.send(new Command("say", label));
 		};
+		
 		self.send_winner = function(winnerUid) {
 			self.send(new Command("winner", winnerUid));
 		}
+		
 		self.update_matrix = function(data) {
 			var index = data.type == "animal" ? 0 : 1;
 			self.state.player_matrix[data.changed_uid][index] = data.value != '' ? data.value : null;
 			self.send_game_state();
 		}
+		
+		self.send = function (command) {
+			if (self.connected) {
+				ws.send(JSON.stringify(command));
+			}
+		};
+		
 		function on_message(message) {
 			var command = JSON.parse(message);
 			switch (command.cmd) {
@@ -235,11 +264,6 @@ var mod = (function() {
 			}
 			self.uid = val;
 		}
-		self.send = function (command) {
-			if (self.connected) {
-				ws.send(JSON.stringify(command));
-			}
-		};
 	}
 	Player.super_ = events.EventEmitter;
 	Player.prototype = Object.create(events.EventEmitter.prototype, {
@@ -248,10 +272,14 @@ var mod = (function() {
 	        enumerable: false
 	    }
 	});
+	
+	//Command capsule (just for the sake of syntax definition)
 	function Command(command, data) {
 		this.cmd = command;
 		this.data = data;
 	}
+	
+	//Actual server
 	var WebSocketServer = require('ws').Server
 	  , wss = new WebSocketServer({port: 8080});
 	var server = {
