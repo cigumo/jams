@@ -209,7 +209,7 @@
 			setTimeout(function() {
 				var rnd = self.random_int(1, self.round > 10 ? self.round : 10);
 				if (rnd > 5) {
-					var i = self.random_int(0, self.players.length);
+					var i = self.random_int(0, self.players.length-1);
 					self.players[i].send_audio(self.random_int(0,1) 
 							? self.players[i].state.animal 
 							: self.players[i].state.condition);
