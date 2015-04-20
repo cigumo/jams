@@ -41,8 +41,9 @@
 		self.conditions = ["fart", "burp", "sneeze", "cough"];
 		self.current_turn_commands = {};
 		
-		self.min_players = 4; 	// how many players have to be connected to start the game
-		self.shout = true;		// whether to spoil somebody 
+		self.min_players = 4; 			// how many players have to be connected to start the game
+		self.shout = true;				// whether to spoil somebody 
+		self.mock_contestants = true; 	// whether to single play against dumbots
 		
 		self.set_player = function(player) {
 			var index = -1;
@@ -76,6 +77,9 @@
 					break;
 				}
 			});
+			if (self.mock_contestants) {
+				add_dumbots();
+			}
 			if (self.players.length === self.min_players) {
 				self.start_game();
 			}
@@ -122,6 +126,9 @@
 			} else {
 				self.current_turn_commands.defense.push({ uid:player.uid, to:null });
 			}
+			if (self.mock_contestants) {
+				dumbot_actions(false);
+			}
 			if (self.current_turn_commands.defense.length+1 == self.players.length) {
 				self.resolve_turn();
 			}
@@ -132,7 +139,10 @@
 				player.state.can_defend = false;
 			}
 			self.current_turn_commands.defense.push({ uid:player.uid, to:label });
-			if (self.current_turn_commands.defense.length+1 == self.players.length) {
+			if (self.mock_contestants) {
+				dumbot_actions(true);
+			}
+			if (self.current_turn_commands.defense.length+1 == self.players.length && self.current_turn_commands.attack != null) {
 				self.resolve_turn();
 			}
 		};
@@ -209,6 +219,30 @@
 				}
 			}, self.random_int(60, 120)*1000);
 		};
+		
+		function add_dumbots() {
+			var player;
+			console.log(self.min_players);
+			for (var i = 1; i < self.min_players; i++) {
+				console.log(i);
+				player = new Player(null);
+				player.name = "Dumbot "+i;
+				player.connected = false;
+				player.uid = md5(Math.random());
+				self.players.push(player);
+			}
+		}
+		function dumbot_actions(attack) {
+			for (var i=1; i<self.players.length; i++) {
+				if (attack && i == self.current_player_index) {
+					var index = self.random_int(0, self.conditions.length -1);
+					var label = self.random_int(0, 1) ? self.animals[index] : self.conditions[index];
+					self.current_turn_commands.attack = { uid:self.players[i].uid, to: label};
+				} else {
+					self.current_turn_commands.defense.push({ uid:player.uid, to:null });
+				}
+			}
+		}
 	}
 	
 	//Player capsule, wraps communication and player specific related data, event emitter
