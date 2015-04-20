@@ -222,9 +222,7 @@
 		
 		function add_dumbots() {
 			var player;
-			console.log(self.min_players);
 			for (var i = 1; i < self.min_players; i++) {
-				console.log(i);
 				player = new Player(null);
 				player.name = "Dumbot "+i;
 				player.connected = false;
