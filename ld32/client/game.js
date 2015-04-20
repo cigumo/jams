@@ -23,6 +23,7 @@ var audio_db = function()
     var audio_files_path = "audio/";
     var audio_files = {
         "blank" : "blank.wav",
+        "intro" : "intro.mp3",
         "ambient" : ["ambiente_birds.mp3", "ambiente_birds2.mp3", "ambiente_river.mp3", "ambiente_wind.mp3"],
 
         "pig"    : ["chancho1.mp3","chancho2.mp3","chancho3.mp3"],    
@@ -76,9 +77,38 @@ var audio_db = function()
 // ------------------------------------------------------------
 var game = function()
 {
-    var data = {};
     var websocket;    
+    var data = {};
 
+    // DEBUG DATA
+    data.game_state = {"state":"waiting",
+                       "turn":0,
+                       "token":"",
+                       "animal":"pig",
+                       "condition":"fart",
+                       "can_defend":true,
+                       "player_matrix":{"a":[null,null],
+                                        "b":[null,null],
+                                        "c":[null,null]},
+                       "player_names":{"a":"Pepe",
+                                       "b":"Tito",
+                                       "c":"Cholo"}
+                      };
+
+    var animals = [
+        "pig",
+        "cow",   
+        "duck",   
+        "sheep",
+    ];
+
+    var conditions = [
+        "burp", 
+        "fart",   
+        "sneeze", 
+        "cough",  
+    ];
+    
     // ------------------------------------------------------------
     var set_cookie = function (cname, cvalue, exdays) {
         var d = new Date();
@@ -107,18 +137,26 @@ var game = function()
         websocket.onmessage = function(evt) { on_message(evt) };
         websocket.onerror = function(evt) { on_error(evt) };        
     }
-
+    
     // 
     var on_open = function(evt)
-    {        
+    {
+        mlog.error('Opening websocket')
+        var uid = get_cookie('uid')        
+        mlog.debug('stored uid: ' + uid)        
+        send_cmd('uid', uid)
+
+        send_cmd('name', data.username)
+        send_cmd('get_game_state')
     }
-    var on_close = function(evt)
-    {        
+    var on_close = function(evt)    
+    {
+        mlog.error('Closing websocket')
     }
     var on_message = function(evt)
     {
         mlog.debug('Rcvd:' + evt.data)
-        process_cmd(evt)
+        process_cmd(evt.data)
     }
     var on_error = function(evt)
     {
@@ -127,12 +165,14 @@ var game = function()
 
     var send = function(s)
     {
-        mlog.debug('Sending:' + s)
-        websocket.send(s)
+        mlog.debug('Sending:' + s + ' websocket:' + websocket)
+        // DEBUG DISABLED
+        //websocket.send(s)
     }
     var send_cmd = function(cmd, data)
     {
-        send(JSON.encode({"cmd":cmd,"data":data}))
+        var s = JSON.encode({"cmd":cmd,"data":data})
+        send(s)
     }
 
     // ------------------------------------------------------------
@@ -143,12 +183,12 @@ var game = function()
         switch (c.cmd) {
 
         case 'set_uid':
-            game.data.uid = uid
+            data.uid = uid
             break;
 
         case 'set_game_state':
-            game.data.state = c.data
-            game_state_updated(c.data)
+            data.game_state = c.data
+            game_state_updated()
             break;
 
         case 'say':
@@ -161,11 +201,6 @@ var game = function()
     // UI Handlers
     var init = function()
     {
-        var uid = get_cookie('uid')        
-        mlog.debug('stored uid: ' + uid)
-        
-        ws_init();
-        send_cmd('uid', uid)        
     }
     
     var do_ping = function()
@@ -176,22 +211,22 @@ var game = function()
     var do_start = function()
     {
         // enable audio on the browser by reacting to user interaction
-        audio_db.play('start')
+        audio_db.play('intro')
         audio_db.play_bg('blank')
 
         // user name
         var username = $('username').value       
         if (username.length != 0)
         {
-            game.data.username = username
-            
-            send_cmd('name', username)
-            send_cmd('get_game_state')
-            
+            data.username = username
             ui.hide('missing_username')
             ui.hide('splash')
 
-            ui.show('main')
+            // DEBUG
+            //ws_init();        
+            
+            // DEBUG
+            game_state_updated(data)
         }
         else
         {
@@ -199,16 +234,200 @@ var game = function()
         }
     }
 
-    var game_state_updated = function(state)
+    var do_attack = function(label)
     {
-        var table = new HtmlTable();
-        table.properties = { border:1, cellspacing: 3}
+        send_cmd('attack', label)
+    }
+
+    var do_defend = function(label)
+    {
+        send_cmd('defend',label)
+    }
+
+    var do_guess = function()
+    {
+        send_cmd('guess',null)
+    }
+
+    var do_cycle_animal = function(uid)
+    {
+        var next
+        var current = data.game_state.player_matrix[uid][0]        
+        var idx = animals.indexOf(current)
+        if (idx == -1)
+            next = animals[0]
+        else if (idx == (animals.length-1))
+            next = null
+        else
+            next = animals[idx+1];
+
+        send_cmd('update_matrix',
+                 {changed_uid:uid,
+                  type:'animal',
+                  value:next})
+
+        // DEBUG ONLY
+        data.game_state.player_matrix[uid][0] = next
+        game_state_updated()
+    }
+     
+    var do_cycle_condition = function(uid)
+    {
+        var next        
+        var current = data.game_state.player_matrix[uid][1]
+        var idx = conditions.indexOf(current)
+        if (idx == -1)
+            next = conditions[0]
+        else if (idx == (conditions.length-1))
+            next = ''
+        else
+            next = conditions[idx+1];
+
+        send_cmd('update_matrix',
+                 {changed_uid:uid,
+                  type:'condition',
+                  value:next})
+
+        // DEBUG ONLY
+        data.game_state.player_matrix[uid][1] = next
+        game_state_updated()
+    }
+    
+    // ------------------------------------------------------------    
+    var game_state_updated = function()
+    {
+        var gs = data.game_state
+        var turn_flag = ''
+        if (gs.token == data.uid)
+            turn_flag = 'TURN';
         
-        for ( uid in state.player_matrix ) {
-            var row = state.player_matrix[uid]
-            table.push([state.player_names[uid], row[0], row[1]])
+        // update matrix
+        $('matrix').empty()
+
+        var table = new Element('table')
+        var tr 
+        var td 
+        var a
+        
+        // first row
+        tr = new Element('tr')
+        td = new Element('td')
+        td.set('html', turn_flag)
+        td.inject(tr)
+        td = new Element('td')
+        td.set('html', data.username)
+        td.inject(tr)
+        td = new Element('td')
+        td.set('html', gs.animal)
+        td.inject(tr)
+        td = new Element('td')
+        td.set('html', gs.condition)
+        td.inject(tr)
+        tr.inject(table)
+
+        // next rows              
+        for ( uid in gs.player_matrix ) {
+            var m = gs.player_matrix[uid]
+            var animal = m[0]
+            var condition = m[1]
+            if (m[0] == '' || m[0] == null) animal = '?'
+            if (m[1] == '' || m[1] == null) condition = '?'
+
+            tr = new Element('tr')
+
+            td = new Element('td')
+            td.set('html', turn_flag)
+            td.inject(tr)
+            
+            td = new Element('td')
+            td.set('html', gs.player_names[uid])
+            td.inject(tr)
+
+            td = new Element('td')
+            td.set('html', animal)
+            td.set('onclick', "game.do_cycle_animal('" + uid + "')")
+            td.inject(tr)
+            
+            td = new Element('td')
+            td.set('html', condition)
+            td.set('onclick', "game.do_cycle_condition('" + uid + "')")
+            td.inject(tr)
+
+            tr.inject(table)            
         }
         table.inject($('matrix'))
+
+        // guess or attack
+        $('attack').empty()
+
+        var a = new Element('a')
+        a.href = '#'
+        a.set('class', 'button')
+        a.set('onclick', "game.do_guess()")
+        a.set('html', 'guess')
+        a.inject($('attack'))           
+
+        for (i=0; i<conditions.length; i++) {
+            var condition = conditions[i]
+            var a = new Element('a')
+            a.href = '#'
+            a.set('onclick', "game.do_attack('"+condition+"')")
+            a.set('class', 'button')
+            a.set('html', condition)
+            a.inject($('attack'))
+        }
+        
+        for (i=0; i<animals.length; i++) {
+            var animal = animals[i]
+            var a = new Element('a')
+            a.href = '#'
+            a.set('onclick', "game.do_attack('"+animal+"')")
+            a.set('class', 'button')
+            a.set('html', animal)
+            a.inject($('attack'))           
+        }
+        
+        // defend
+        $('defend').empty();
+        ([gs.animal, gs.condition, 'ready']).each(function(o) {
+            var a = new Element('a')
+            a.href = '#'
+            a.set('class', 'button')
+            if ( o == 'ready' )
+                a.set('onclick', "game.do_defend()")
+            else
+                a.set('onclick', "game.do_defend('"+ o +"')");            
+            a.set('html', o)
+            a.inject($('defend'))
+        });
+
+        // show/hide ui elements
+        switch (gs.state) {
+        case "waiting":
+            ui.show('waiting')
+            ui.hide('main')
+            break;
+        case "playing":
+            ui.hide('waiting')
+            ui.show('main')                
+            break;
+        case "finished":
+            ui.hide('waiting')
+            ui.hide('main')
+            break;
+        }
+
+        if (gs.token == data.uid)
+        {
+            ui.show('attack')
+            ui.hide('defend')
+        }
+        else
+        {
+            ui.hide('attack')
+            ui.show('defend')
+        }
+
     }
 
     // ------------------------------------------------------------
@@ -217,17 +436,18 @@ var game = function()
         init : init,
         do_ping : do_ping,
         do_start : do_start,
+        do_cycle_animal : do_cycle_animal,
+        do_cycle_condition : do_cycle_condition,
+        do_attack : do_attack,
+        do_defend : do_defend,
+        do_guess : do_guess,
     }
 }();
 
-
-    
 // ------------------------------------------------------------
 window.onload = function() {
     if (DEBUG_LEVEL) mlog.set_level(DEBUG_LEVEL)
-
     game.init();
-
 }
 
 // ------------------------------------------------------------
