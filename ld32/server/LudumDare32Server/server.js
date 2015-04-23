@@ -86,7 +86,7 @@
 		};
 		
 		self.start_game = function() {
-			self.players.shuffle();
+			self.players = self.players.shuffle();
 			self.current_player_index = -1;
 			self.turn = 0;
 			for (var i=0; i<self.players.length; i++) {
@@ -95,10 +95,10 @@
 				self.players[i].state.player_matrix = {};
 				self.players[i].state.player_names = {};
 				for (var j=0; j<self.players.length; j++) {
-					if (self.players[j].uid != self.players[i].uid) {
-						self.players[j].state.player_matrix[self.players[i].uid] = [null, null];
+					if (self.players[j].uid !== self.players[i].uid) {
+						self.players[i].state.player_matrix[self.players[j].uid] = [null, null];
 					}
-					self.players[j].state.player_names[self.players[i].uid] = self.players[i].name;
+					self.players[i].state.player_names[self.players[j].uid] = self.players[j].name;
 				}
 			}
 			if (self.shout) {
