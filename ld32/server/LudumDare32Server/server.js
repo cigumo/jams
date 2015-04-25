@@ -237,7 +237,7 @@
 					var label = self.random_int(0, 1) ? self.animals[index] : self.conditions[index];
 					self.current_turn_commands.attack = { uid:self.players[i].uid, to: label};
 				} else {
-					self.current_turn_commands.defense.push({ uid:player.uid, to:null });
+					self.current_turn_commands.defense.push({ uid:self.players[i].uid, to:null });
 				}
 			}
 		}
@@ -310,7 +310,7 @@
 			}
 		}
 		function uid(val) {
-			if (val === null || val === undefined) {
+			if (val === null || val === undefined || val === "") {
 				val = md5(Math.random());
 				self.send(new Command("set_uid", val));
 			}

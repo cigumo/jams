@@ -81,19 +81,19 @@ var game = function()
     var data = {};
 
     // DEBUG DATA
-    data.game_state = {"state":"waiting",
-                       "turn":0,
-                       "token":"",
-                       "animal":"pig",
-                       "condition":"fart",
-                       "can_defend":true,
-                       "player_matrix":{"a":[null,null],
-                                        "b":[null,null],
-                                        "c":[null,null]},
-                       "player_names":{"a":"Pepe",
-                                       "b":"Tito",
-                                       "c":"Cholo"}
-                      };
+    //data.game_state = {"state":"waiting",
+    //                   "turn":0,
+    //                   "token":"",
+    //                   "animal":"pig",
+    //                   "condition":"fart",
+    //                   "can_defend":true,
+    //                   "player_matrix":{"a":[null,null],
+    //                                    "b":[null,null],
+    //                                    "c":[null,null]},
+    //                   "player_names":{"a":"Pepe",
+    //                                   "b":"Tito",
+    //                                   "c":"Cholo"}
+    //                  };
 
     var animals = [
         "pig",
@@ -167,7 +167,7 @@ var game = function()
     {
         mlog.debug('Sending:' + s + ' websocket:' + websocket)
         // DEBUG DISABLED
-        //websocket.send(s)
+        websocket.send(s)
     }
     var send_cmd = function(cmd, data)
     {
@@ -183,7 +183,7 @@ var game = function()
         switch (c.cmd) {
 
         case 'set_uid':
-            data.uid = uid
+            data.uid = c.data
             break;
 
         case 'set_game_state':
@@ -223,10 +223,10 @@ var game = function()
             ui.hide('splash')
 
             // DEBUG
-            //ws_init();        
+            ws_init();        
             
             // DEBUG
-            game_state_updated(data)
+            //game_state_updated(data)
         }
         else
         {
@@ -267,8 +267,8 @@ var game = function()
                   value:next})
 
         // DEBUG ONLY
-        data.game_state.player_matrix[uid][0] = next
-        game_state_updated()
+        //data.game_state.player_matrix[uid][0] = next
+        //game_state_updated()
     }
      
     var do_cycle_condition = function(uid)
@@ -297,9 +297,6 @@ var game = function()
     var game_state_updated = function()
     {
         var gs = data.game_state
-        var turn_flag = ''
-        if (gs.token == data.uid)
-            turn_flag = 'TURN';
         
         // update matrix
         $('matrix').empty()
@@ -312,7 +309,8 @@ var game = function()
         // first row
         tr = new Element('tr')
         td = new Element('td')
-        td.set('html', turn_flag)
+        if (gs.token == data.uid)           
+            td.set('html', "YOUR TURN");
         td.inject(tr)
         td = new Element('td')
         td.set('html', data.username)
@@ -336,7 +334,8 @@ var game = function()
             tr = new Element('tr')
 
             td = new Element('td')
-            td.set('html', turn_flag)
+            if (gs.token == uid)
+                td.set('html', 'TURN');
             td.inject(tr)
             
             td = new Element('td')
